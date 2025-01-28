@@ -37,7 +37,7 @@ def generate_visualization_code(df, api_key, user_prompt):
         
         # Call the OpenAI API using the correct method
         response = openai.ChatCompletion.create(
-            model="gpt-4o-mini",  # Use "gpt-4" or "gpt-3.5-turbo"
+            model="GPT-3.5",  # Use "gpt-4" or "gpt-3.5-turbo"
             messages=[
                 {"role": "system", "content": "You are a helpful assistant that writes Python code for data visualization."},
                 {"role": "user", "content": prompt},
