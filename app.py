@@ -1,94 +1,66 @@
-import streamlit as st
 import pandas as pd
 import openai
+import streamlit as st
 
-# Function to load data from Excel or CSV
-def load_data(file):
-    if file is not None:
-        try:
-            if file.name.endswith(".xlsx"):
-                return pd.read_excel(file)
-            elif file.name.endswith(".csv"):
-                return pd.read_csv(file)
-            else:
-                st.error("Invalid file format. Please upload an Excel or CSV file.")
-        except Exception as e:
-            st.error(f"Error reading the file: {e}")
-    return None
+# OpenAI API key
+openai.api_key = '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'
 
-# Function to generate code or perform actions using OpenAI
-def process_data_with_openai(df, api_key, user_prompt):
+# Function to load the file
+def load_file(file_path):
     try:
-        openai.api_key = api_key
-
-        # Convert a preview of the dataframe to a string to include in the prompt
-        data_preview = df.head().to_string()
-
-        # Create prompt for OpenAI
-        prompt = f"""
-        Here is a preview of the data:
-        {data_preview}
-
-        Based on the following user request:
-        {user_prompt}
-
-        Generate Python code or provide the required information to fulfill the request.
-        """
-
-        # Call the OpenAI API
-        response = openai.ChatCompletion.create(
-            model="gpt-4o-mini",  # Change model if needed
-            messages=[
-                {"role": "system", "content": "You are a helpful assistant that works with data Analyst."},
-                {"role": "user", "content": prompt},
-            ],
-            max_tokens=700,
-            temperature=0.5,
-        )
-
-        # Extract the response content
-        output = response['choices'][0]['message']['content'].strip()
-        return output
+        # Check the file extension and load accordingly
+        if file_path.endswith('.xlsx'):
+            data = pd.read_excel(file_path)
+        elif file_path.endswith('.csv'):
+            data = pd.read_csv(file_path)
+        else:
+            raise ValueError("File format not supported. Please use .xlsx or .csv.")
+        
+        st.success("File loaded successfully!")
+        return data
     except Exception as e:
-        st.error(f"Error processing request: {e}")
+        st.error(f"Error: {e}")
         return None
 
+# Function to generate plot or analysis based on the user's prompt
+def generate_plot(data, prompt):
+    # Query OpenAI to interpret the user's request and suggest a solution
+    response = openai.Completion.create(
+        model="text-davinci-003",
+        prompt=f"Given the following data structure, interpret the user's request and suggest how to visualize or analyze it.\n\nData columns: {', '.join(data.columns)}\nUser request: {prompt}",
+        max_tokens=200
+    )
+
+    # Extract OpenAI's interpretation of the user's request
+    action = response.choices[0].text.strip()
+    st.write(f"OpenAI's interpretation: {action}")
+    
+    # Return OpenAI's action to the user
+    return action
+
 # Streamlit UI
-st.title("AI-Powered Data Assistant App")
-st.write("Upload an Excel or CSV file, provide your OpenAI API key, enter a prompt, and let AI assist with your request.")
+st.title('Data Analysis Assistant')
 
-# File uploader for data input
-uploaded_file = st.file_uploader("Choose an Excel or CSV file", type=["xlsx", "csv"])
+# File upload
+uploaded_file = st.file_uploader("Choose an Excel (.xlsx) or CSV file", type=['xlsx', 'csv'])
 
-# Load the data
-df = load_data(uploaded_file)
-
-# API key input
-api_key = st.text_input("Enter your OpenAI API Key", type="password")
-
-# User prompt input
-user_prompt = st.text_area("Enter your request (e.g., data analysis, visualization, summary, etc.)")
-
-if df is not None:
-    st.write("### Data Preview", df.head())
-
-    if api_key and user_prompt:
-        st.write("Processing your request...")
-
-        # Process the request using OpenAI
-        output = process_data_with_openai(df, api_key, user_prompt)
+if uploaded_file is not None:
+    # Load the file
+    file_data = load_file(uploaded_file)
+    
+    if file_data is not None:
+        # Display the first few rows of the data
+        st.write("Dataset Preview:")
+        st.dataframe(file_data.head())
         
-        if output:
-            st.write("### AI Response")
-            st.code(output, language='python' if 'import' in output else None)
+        # Get user prompt for analysis or chart
+        user_prompt = st.text_input("Enter a prompt for analysis or chart (e.g., 'Generate a bar chart for 'age', 'Create a histogram for 'salary'):")
 
-            # Execute Python code if applicable
-            if "import" in output:  # Check if the response is Python code
-                try:
-                    exec(output)
-                except Exception as e:
-                    st.error(f"Error executing the code: {e}")
-        else:
-            st.error("Failed to process your request.")
-    else:
-        st.write("Please enter your OpenAI API key and a prompt to proceed.")
+        if user_prompt:
+            # Generate and show response from OpenAI
+            response = generate_plot(file_data, user_prompt)
+            st.write(f"Response from OpenAI: {response}")
+
+# Run the app
+if __name__ == "__main__":
+    st.write("Interactive data analysis using OpenAI's language model.")
