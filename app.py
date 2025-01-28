@@ -16,29 +16,36 @@ def load_data(file):
             st.error(f"Error reading the file: {e}")
     return None
 
-# Function to get OpenAI API key and generate visualization code
+# Function to generate visualization code
 def generate_visualization_code(df, api_key, user_prompt):
     try:
         openai.api_key = api_key
-        
+
         # Convert dataframe to string to send to OpenAI
         data_str = df.head().to_string()
 
         # Create prompt for OpenAI to generate visualization code
-        prompt = f"Here is a preview of some data:\n{data_str}\n\nUser requested the following:\n{user_prompt}\nGenerate Python code using Plotly or Matplotlib to visualize this data based on the user's request."
+        prompt = f"""
+        Here is a preview of some data:
+        {data_str}
+
+        User requested the following:
+        {user_prompt}
+
+        Generate Python code using Plotly or Matplotlib to visualize this data based on the user's request.
+        """
         
-        # Use the new OpenAI API for completions
-        response = openai.chat_completions.create(
-            model="gpt-4",  # Use GPT-4 or the latest available model
+        # Call the OpenAI API using the correct method
+        response = openai.ChatCompletion.create(
+            model="gpt-4",  # Use "gpt-4" or "gpt-3.5-turbo"
             messages=[
-                {"role": "system", "content": "You are a helpful assistant."},
+                {"role": "system", "content": "You are a helpful assistant that writes Python code for data visualization."},
                 {"role": "user", "content": prompt},
             ],
             max_tokens=500,
             temperature=0.5,
         )
 
-        # Extract the code from the response
         visualization_code = response['choices'][0]['message']['content'].strip()
         return visualization_code
     except Exception as e:
@@ -62,7 +69,7 @@ uploaded_file = st.file_uploader("Choose an Excel or CSV file", type=["xlsx", "c
 # Load the data
 df = load_data(uploaded_file)
 
-# API key input (takes place after file upload)
+# API key input
 api_key = st.text_input("Enter your OpenAI API Key", type="password")
 
 # User prompt input
