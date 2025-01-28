@@ -16,52 +16,46 @@ def load_data(file):
             st.error(f"Error reading the file: {e}")
     return None
 
-# Function to generate visualization code
-def generate_visualization_code(df, api_key, user_prompt):
+# Function to generate code or perform actions using OpenAI
+def process_data_with_openai(df, api_key, user_prompt):
     try:
         openai.api_key = api_key
 
-        # Convert dataframe to string to send to OpenAI
-        data_str = df.head().to_string()
+        # Convert a preview of the dataframe to a string to include in the prompt
+        data_preview = df.head().to_string()
 
-        # Create prompt for OpenAI to generate visualization code
+        # Create prompt for OpenAI
         prompt = f"""
-        Here is a preview of some data:
-        {data_str}
+        Here is a preview of the data:
+        {data_preview}
 
-        User requested the following:
+        Based on the following user request:
         {user_prompt}
 
-        Generate Python code using Plotly or Matplotlib to visualize this data based on the user's request.
+        Generate Python code or provide the required information to fulfill the request.
         """
-        
-        # Call the OpenAI API using the correct method
+
+        # Call the OpenAI API
         response = openai.ChatCompletion.create(
-            model="gpt-4o-mini",  # Use "gpt-4" or "gpt-3.5-turbo"
+            model="gpt-4o-mini",  # Change model if needed
             messages=[
-                {"role": "system", "content": "You are a helpful assistant that writes Python code for data visualization."},
+                {"role": "system", "content": "You are a helpful assistant that works with data and Python code."},
                 {"role": "user", "content": prompt},
             ],
-            max_tokens=500,
+            max_tokens=700,
             temperature=0.5,
         )
 
-        visualization_code = response['choices'][0]['message']['content'].strip()
-        return visualization_code
+        # Extract the response content
+        output = response['choices'][0]['message']['content'].strip()
+        return output
     except Exception as e:
-        st.error(f"Error generating code: {e}")
+        st.error(f"Error processing request: {e}")
         return None
 
-# Function to execute the generated visualization code
-def execute_visualization_code(visualization_code):
-    try:
-        exec(visualization_code)
-    except Exception as e:
-        st.error(f"Error executing the code: {e}")
-
 # Streamlit UI
-st.title("AI-Powered Data Visualization App")
-st.write("Upload an Excel or CSV file, provide your OpenAI API key, enter a prompt, and let AI generate a visualization.")
+st.title("AI-Powered Data Assistant App")
+st.write("Upload an Excel or CSV file, provide your OpenAI API key, enter a prompt, and let AI assist with your request.")
 
 # File uploader for data input
 uploaded_file = st.file_uploader("Choose an Excel or CSV file", type=["xlsx", "csv"])
@@ -73,23 +67,28 @@ df = load_data(uploaded_file)
 api_key = st.text_input("Enter your OpenAI API Key", type="password")
 
 # User prompt input
-user_prompt = st.text_input("Enter your visualization or data analysis prompt")
+user_prompt = st.text_area("Enter your request (e.g., data analysis, visualization, summary, etc.)")
 
 if df is not None:
     st.write("### Data Preview", df.head())
 
     if api_key and user_prompt:
-        st.write("Generating visualization...")
+        st.write("Processing your request...")
 
-        # Generate the code using OpenAI
-        visualization_code = generate_visualization_code(df, api_key, user_prompt)
+        # Process the request using OpenAI
+        output = process_data_with_openai(df, api_key, user_prompt)
         
-        if visualization_code:
-            st.code(visualization_code, language='python')
+        if output:
+            st.write("### AI Response")
+            st.code(output, language='python' if 'import' in output else None)
 
-            # Execute the generated code
-            execute_visualization_code(visualization_code)
+            # Execute Python code if applicable
+            if "import" in output:  # Check if the response is Python code
+                try:
+                    exec(output)
+                except Exception as e:
+                    st.error(f"Error executing the code: {e}")
         else:
-            st.error("Failed to generate visualization code.")
+            st.error("Failed to process your request.")
     else:
         st.write("Please enter your OpenAI API key and a prompt to proceed.")
