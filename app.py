@@ -39,7 +39,7 @@ def process_data_with_openai(df, api_key, user_prompt):
         response = openai.ChatCompletion.create(
             model="gpt-4o-mini",  # Change model if needed
             messages=[
-                {"role": "system", "content": "You are a helpful assistant that works with data and Python code."},
+                {"role": "system", "content": "You are a helpful assistant that works with data Analyst and Python code."},
                 {"role": "user", "content": prompt},
             ],
             max_tokens=700,
