@@ -25,7 +25,7 @@ def process_data_with_openai(df, api_key, user_prompt):
         data_preview = df.head().to_string()
 
         # Create prompt for OpenAI
-        prompt = f'''
+        prompt = f"""
         Here is a preview of the data:
         {data_preview}
 
